@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head 
+         content must come *after* these tags -->
+    <title>Angus Search Engine</title>
+        <!-- Bootstrap -->
+    <link href="{{ url_for('static', filename='styles/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles/css/bootstrap-theme.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles/css/font-awesome.min.css') }}" rel="stylesheet">
+    <!-- <link href="css/bootstrap-social.css" rel="stylesheet"> -->
+    <link href="{{ url_for('static', filename='styles/css/searchStyle.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3">
+            <div id="imaginary_container"> 
+                <div class="input-group stylish-input-group">
+                    <input type="text" class="form-control" name="query" id="keyword" list="browsers" placeholder="Search" >
+                    <!--<datalist id="browsers">
+                    </datalist>-->
+                    
+                    <span class="input-group-addon">
+                        <button type="submit" onclick="scan()">
+                            <span class="glyphicon glyphicon-search"></span>
+                        </button>  
+                    </span>
+                    
+
+                </div>
+                <div>
+                    <ul class="list-unstyled" id="suggestword"></ul>
+                </div>
+                <div>
+                <form>
+                    <input type="radio" name="choice" id="pagerank" value="1" checked>
+                    <label for="pagerank">PageRank</label>
+                    <input type="radio" name="choice" id="default" value="0">
+                    <label for="default">Default</label>
+                </form>
+                </div>
+                
+                    
+                </div>
+                <div class="row">
+                        <!-- <div class="col-sm-8"> -->
+                            <div id="showresults">
+                            </div>
+                        <!-- </div> -->
+                    </div>
+            </div>
+
+        </div>
+        
+    </div>
+</div>
+
+<!-- <script src="./js/jquery-3.2.0.min.js"></script> -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+<script
+  src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script>
+    
+    
+
+
+
+    var keyword = "";
+    var PageRank;
+    var keytemp = [];
+    var keytemp_str="";
+    // var suggestArray=[];
+
+    $(".form-control").keydown( function(event){
+	// $("#showresults").append( "<br>你输入了字符[" + String.fromCharCode( event.which ) + "](event.which=" + event.which + ')' ) ;
+    // if( event.which == 8 && keytemp.length != 0){
+    //     keytemp.pop();
+    // }
+    // else if(event.which != 8){
+    //     // keytemp.push(event.which);
+    //     keytemp.push(String.fromCharCode(event.which));
+    // }
+    // console.log(keytemp.length);
+    // console.log(keytemp.toString())
+    // console.log(keytemp.join(""))
+
+    keytemp_str = $.trim($("#keyword").val());
+    if(keytemp_str.length != 0){
+        $.ajax({
+            type:"get",
+            dataType:"json",
+            // here toLowerCase() solve the problem, it seems get method cannot handle the 
+            // uppercase, or the SolrClient cannot handle the uppercase
+            // need more test
+            // url:"/suggest?" + "query=" + keytemp.join("").toLowerCase(),
+            url:"/suggest?" + "query=" + keytemp_str.toLowerCase(),
+            success:function(data){
+                console.log(data[2]);
+                var suggestArray = [];
+                var suggesthtml = "";
+                for(var j=0; j<data.length; j++){
+                    //suggestArray.push(data[j]["term"]);
+                    // suggesthtml += "<option value=" + data[j]["term"] + ">"
+                    // suggesthtml += "<li "+ "data-value="+data[j]["term"]+">" + data[j]["term"] + "</li>";
+                    suggesthtml += "<li class='list-item'>" + data[j]["term"] + "</li>";
+                }
+                
+                $("#suggestword").html(suggesthtml);
+                // $("#browsers").html(suggesthtml);
+                
+                // $("#keyword").autocomplete({
+                //     source:suggestArray
+                // });
+
+            },
+            error:function(){
+                console.log("error");
+            }
+        })
+    }
+        if($.trim($("#keyword").val()).length == 0){
+            // keytemp=[];
+            console.log("for zero empty");
+            console.log($.trim($("#keyword").val()).length);
+            $("#suggestword").html("");
+        }
+} );
+
+            function scan(){
+                $("#suggestword").html("");
+                keyword = $.trim($("#keyword").val());
+                console.log('keyword=',keyword);
+                // PageRank = $('input[name="PageRank"]:checked').val();
+                PageRank = $('form input[type=radio]:checked').val();
+                console.log('PageRank=',PageRank);
+                if(keyword==''){
+                    alert('please input query');
+                    $("#keyword").focus()
+                    return false;
+                }
+                $.ajax({
+                        type:'get',
+                        dataType:'json',
+                        url: "/scan?" + "query=" + keyword + "&" + "pagerank="+PageRank,
+                        success:function(data){
+                            var tempdata = data['response']['docs'];
+                                // if(!tempdata[0].id){
+                                // alert('Sorry, have no result!');
+                                // return false;
+                        // }
+                        var re = "";
+                        // console.log()
+                         if(!jQuery.isEmptyObject(data["spellcheck"]["suggestions"])){
+                        // if(["spellcheck"]["suggestions"].length != 0){
+                            re += "<p>Showing results for <span style='color:red'>" + keyword + "</p>";
+                            // var suggestiontemp = data["spellcheck"]["suggestions"][keyword]["suggestion"][0]
+                            var suggestiontemp = data['spellcheck']['collations'][1]
+                            console.log('spellcheck');
+                            console.log(suggestiontemp)
+                            console.log(data)
+                            // re += "<p>Search instead of <span style='color:red'><a href=/scan?query=" + suggestiontemp + "&pagerank="+ PageRank+ ">" + suggestiontemp + "</p>";
+                            re += "<p>Recommand query <span style='color:red'><button id='correctword'>" + suggestiontemp + "</button>"+ "</p>";
+                        }
+
+                        if(data["response"]["numFound"] != "0"){
+                            re+="<ol type='1'>";
+                        var i;
+                        for(i=0; i<10; i++){
+                            if(!jQuery.isEmptyObject(tempdata[i])){
+                            re+="<li>Title:<a href='"+tempdata[i].og_url+"'>"+tempdata[i].title+"</a><br>";
+                            if(!jQuery.isEmptyObject(tempdata[i].snippet)){
+                                re+="Snippet:"+tempdata[i].snippet+"</li>";
+                            }
+                            re+="Url:<a href='"+tempdata[i].og_url+"'>"+tempdata[i].og_url+"</a><br>";
+                            re+="ID:"+tempdata[i].id+"<br>";
+                            re+="Description:"+tempdata[i].description+"</li>";
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                        re+="</ol>"
+                        }
+                        
+                        $('#showresults').html(re)
+                        },
+                        error:function(){
+                            alert('Error!')
+                        }
+                })
+            }
+
+        $("#showresults").on("click","#correctword",function(){
+            var content = $(this).text();
+            $("input[name='query']").val(content);
+        });
+   
+        $("#suggestword").on("click",".list-item",function(){
+        var content = $(this).text();
+        $("input[name='query']").val(content);
+    });
+   
+</script>
+
+</body>
+
+</html>
